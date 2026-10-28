@@ -1,0 +1,10 @@
+FROM nvidia/cuda:12.8.1-base-ubuntu24.04
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 HF_HOME=/data/huggingface MAYA_HOST=0.0.0.0 MAYA_BACKEND=cuda
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv python3-pip git libsndfile1 ffmpeg ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN python3 -m venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
+RUN pip install --no-cache-dir 'maya3[server] @ git+https://github.com/MayaResearch/maya2-native' --extra-index-url https://download.pytorch.org/whl/cu128 && pip install --no-cache-dir soundfile
+WORKDIR /app
+COPY server.py index.html /app/
+EXPOSE 8765
+CMD ["python", "-u", "server.py"]

@@ -1,0 +1,12 @@
+services:
+  studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.cuda
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - maya-models:/data/huggingface
+    gpus: all
+volumes:
+  maya-models:

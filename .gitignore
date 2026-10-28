@@ -1,0 +1,7 @@
+.venv/
+.maya-cache/
+__pycache__/
+*.py[cod]
+*.wav
+*.pcm
+.DS_Store
