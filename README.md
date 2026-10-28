@@ -33,14 +33,36 @@ On Windows PowerShell:
 
 Building an image does not start the app. Follow the [setup guide](maya_studio/README.md) to run the native Mac engine and frontend, or the Windows Docker Compose service. Model files download on first use and can take several gigabytes.
 
+### Run the published image
+
+After CI has published an image, Docker can select the variant for the machine:
+
+```bash
+docker pull <username>/maya-voice-studio:latest
+```
+
+On an Apple Silicon Mac, first start the native MLX backend on port 8766 as described in the [setup guide](maya_studio/README.md), then run:
+
+```bash
+docker run --rm -p 127.0.0.1:8765:8765 <username>/maya-voice-studio:latest
+```
+
+On an NVIDIA-equipped Windows PC using Docker Desktop and WSL 2, run in PowerShell:
+
+```powershell
+docker run --rm --gpus all -p 127.0.0.1:8765:8765 -v maya-models:/data/huggingface <username>/maya-voice-studio:latest
+```
+
+Architecture selects the image variant, not the host operating system: ARM64 contains the Mac frontend proxy, while AMD64 contains the NVIDIA CUDA engine. Other combinations, such as ARM Windows, Intel Macs, or non-NVIDIA Windows PCs, are not supported by this image.
+
 ## Docker Hub CI/CD
 
-The GitHub Actions workflow builds and publishes both images on branch pushes. Add these repository secrets under **Settings → Secrets and variables → Actions**:
+The GitHub Actions workflow builds both platform variants and publishes them to one Docker Hub repository on branch pushes. Add these repository secrets under **Settings → Secrets and variables → Actions**:
 
 - `DOCKERHUB_USERNAME` — the Docker Hub account or organization namespace.
-- `DOCKERHUB_TOKEN` — an access token permitted to push both image repositories.
+- `DOCKERHUB_TOKEN` — an access token permitted to push the image repository.
 
-Images are published as `<username>/maya-voice-studio-mac` and `<username>/maya-voice-studio-windows`. Every branch push receives a `sha-<full-commit-sha>` tag, and pushes to `master` also update `latest`. The workflow can also be run manually. A successful build does not verify GPU speech generation.
+Both variants are published to `<username>/maya-voice-studio`. Docker selects the ARM64 Mac frontend or AMD64 Windows NVIDIA variant automatically. Every branch push receives a `sha-<full-commit-sha>` tag, and pushes to `master` also update `latest`. The workflow can also be run manually. A successful build does not verify GPU speech generation.
 
 ## Security and limitations
 
