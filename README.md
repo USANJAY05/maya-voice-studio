@@ -1,75 +1,31 @@
 # Maya Voice Studio
 
-A local web interface for [Maya 2 Native](https://huggingface.co/maya-research/maya2-native) text-to-speech. Choose a language and voice, use or edit a demo passage, and listen to generated speech. The app supports 12 languages, voice selection, streaming playback, pause and stop, emotion cues, playback speed, and light and dark themes.
+A local web interface for [Maya 2 Native](https://huggingface.co/maya-research/maya2-native) text-to-speech, with 12 languages, built-in voices, editable demos, streaming, playback controls, emotion cues, and light and dark themes.
 
-Maya is a text-to-speech model: it turns text into audio. Regional demo wording and emotion cues are best-effort prompts, not guaranteed accent or emotion controls. Speed changes browser playback; downloaded audio retains its original speed.
+## Platforms
 
-## Choose your platform
+- **Apple Silicon macOS:** Run the MLX speech engine natively on the Mac, with a Docker frontend proxy. Docker Desktop's Linux container does not provide this app direct access to the Apple GPU.
+- **Linux AMD64:** Run the app and CUDA speech engine in Docker on a host with a compatible NVIDIA GPU. The image built successfully, but inference on an NVIDIA host has not been verified.
+- **Linux ARM64:** Not supported yet. The upstream engine pins PyTorch 2.8.0, torchaudio 2.8.0, and Triton 3.4.0; a compatible CUDA ARM64 runtime needs investigation and testing. Do not use the Mac proxy tag as an ARM Linux inference image.
 
-| Platform | Setup | Requirements |
-| --- | --- | --- |
-| Apple Silicon Mac | Docker frontend with a native MLX speech engine | Docker Desktop, Apple Silicon, Python 3.10+, MLX Audio |
-| Windows with NVIDIA GPU | CUDA speech engine and app in Docker | Windows x86-64, Docker Desktop with WSL 2, NVIDIA driver with CUDA 12.8 support; 12 GB VRAM recommended |
+See the [setup guide](maya_studio/README.md) for requirements and commands. Model files download on first use and can take several gigabytes. The app has no authentication; run it only on a trusted network.
 
-The Mac frontend image does **not** run the model inside Docker: the model runs natively to access the Apple GPU. The Windows image requires an NVIDIA GPU; CPU-only Windows and AMD or Intel GPUs are not supported by this configuration. See the [detailed setup guide](maya_studio/README.md) for installation and first-run instructions.
-
-### Build the images
-
-From the project root:
+## Build
 
 ```bash
-# Mac frontend image
-./build.sh mac
-
-# Windows NVIDIA image (Linux AMD64)
-./build.sh windows
+./build.sh mac    # Apple Silicon frontend proxy
+./build.sh linux  # Linux AMD64 NVIDIA CUDA image
 ```
 
-On Windows PowerShell:
+## Docker Hub publishing
 
-```powershell
-./build.ps1
-```
+Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub Actions repository secrets. The token must have permission to push `<username>/maya-voice-studio`. On each branch push, CI builds both variants into that one repository with commit-specific tags. On `master`, it also publishes:
 
-Building an image does not start the app. Follow the [setup guide](maya_studio/README.md) to run the native Mac engine and frontend, or the Windows Docker Compose service. Model files download on first use and can take several gigabytes.
+- `<username>/maya-voice-studio:latest-mac-arm64` — Mac frontend proxy; requires the native Mac MLX engine.
+- `<username>/maya-voice-studio:latest-linux-amd64` — Linux AMD64 NVIDIA CUDA application.
 
-### Run the published image
-
-After CI has published an image, Docker can select the variant for the machine:
-
-```bash
-docker pull <username>/maya-voice-studio:latest
-```
-
-On an Apple Silicon Mac, first start the native MLX backend on port 8766 as described in the [setup guide](maya_studio/README.md), then run:
-
-```bash
-docker run --rm -p 127.0.0.1:8765:8765 <username>/maya-voice-studio:latest
-```
-
-On an NVIDIA-equipped Windows PC using Docker Desktop and WSL 2, run in PowerShell:
-
-```powershell
-docker run --rm --gpus all -p 127.0.0.1:8765:8765 -v maya-models:/data/huggingface <username>/maya-voice-studio:latest
-```
-
-Architecture selects the image variant, not the host operating system: ARM64 contains the Mac frontend proxy, while AMD64 contains the NVIDIA CUDA engine. Other combinations, such as ARM Windows, Intel Macs, or non-NVIDIA Windows PCs, are not supported by this image.
-
-## Docker Hub CI/CD
-
-The GitHub Actions workflow builds both platform variants and publishes them to one Docker Hub repository on branch pushes. Add these repository secrets under **Settings → Secrets and variables → Actions**:
-
-- `DOCKERHUB_USERNAME` — the Docker Hub account or organization namespace.
-- `DOCKERHUB_TOKEN` — an access token permitted to push the image repository.
-
-Both variants are published to `<username>/maya-voice-studio`. Docker selects the ARM64 Mac frontend or AMD64 Windows NVIDIA variant automatically. Every branch push receives a `sha-<full-commit-sha>` tag, and pushes to `master` also update `latest`. The workflow can also be run manually. A successful build does not verify GPU speech generation.
-
-## Security and limitations
-
-The app has no authentication. The supplied Docker Compose files publish the frontend only to localhost. The Mac native engine must listen on a network interface for Docker Desktop to reach it; run it on a trusted network and stop it when not in use. The app processes one generation at a time.
-
-The Mac container frontend and streaming were tested with the native MLX engine. The Windows image was built and its web server was tested, but speech generation on an NVIDIA-equipped Windows machine has not yet been verified.
+Separate tags are necessary because both Docker Desktop on Apple Silicon and native ARM Linux use the `linux/arm64` platform identifier, even though their GPU backends differ. There is no supported Linux ARM64 image yet. CI builds do not verify GPU inference.
 
 ## Credits
 
-This project uses [Maya 2 Native](https://huggingface.co/maya-research/maya2-native) and [MLX Audio](https://github.com/Blaizzy/mlx-audio). See the model card and upstream projects for their licenses and component attribution, including Kyutai Mimi.
+Uses [Maya 2 Native](https://huggingface.co/maya-research/maya2-native) and [MLX Audio](https://github.com/Blaizzy/mlx-audio). See upstream projects for licenses and attribution, including Kyutai Mimi.

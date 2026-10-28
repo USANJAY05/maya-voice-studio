@@ -19,11 +19,11 @@ jobs:
           - name: mac-frontend
             dockerfile: maya_studio/Dockerfile.mac
             platform: linux/arm64
-            suffix: mac
-          - name: windows-nvidia
-            dockerfile: maya_studio/Dockerfile.cuda
+            suffix: mac-arm64
+          - name: linux-amd64
+            dockerfile: maya_studio/Dockerfile.linux
             platform: linux/amd64
-            suffix: windows
+            suffix: linux-amd64
     steps:
       - uses: actions/checkout@v4
       - name: Validate Docker Hub credentials
@@ -52,23 +52,12 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
-  manifest:
-    name: Publish multi-platform tag
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Combine platform images
+      - name: Publish latest platform tag on master
+        if: github.ref == 'refs/heads/master'
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           COMMIT_SHA: ${{ github.sha }}
-          REF: ${{ github.ref }}
+          SUFFIX: ${{ matrix.suffix }}
         run: |
           image="${DOCKERHUB_USERNAME}/maya-voice-studio"
-          tags=(-t "$image:sha-$COMMIT_SHA")
-          if [ "$REF" = 'refs/heads/master' ]; then tags+=(-t "$image:latest"); fi
-          docker buildx imagetools create "${tags[@]}" "$image:sha-$COMMIT_SHA-mac" "$image:sha-$COMMIT_SHA-windows"
+          docker buildx imagetools create -t "$image:latest-$SUFFIX" "$image:sha-$COMMIT_SHA-$SUFFIX"
