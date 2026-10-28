@@ -61,3 +61,19 @@ jobs:
         run: |
           image="${DOCKERHUB_USERNAME}/maya-voice-studio"
           docker buildx imagetools create -t "$image:latest-$SUFFIX" "$image:sha-$COMMIT_SHA-$SUFFIX"
+
+  dockerhub-description:
+    name: Update Docker Hub description
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synchronize README
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/maya-voice-studio
+          readme-filepath: ./README.md
+          short-description: Local multilingual text-to-speech with Maya 2 Native.
