@@ -45,3 +45,12 @@ Compose publishes the frontend to localhost only. The app has no authentication 
 ## Build scripts
 
 From the project root, run `./build.sh mac` to build the Mac frontend image or `./build.sh windows` to build the Windows NVIDIA image. In Windows PowerShell, run `./build.ps1` (or `./build.ps1 -Target windows`). These commands build images; use the platform-specific startup instructions above to run them.
+
+## Docker Hub CI/CD
+
+The GitHub Actions workflow builds and publishes both images whenever a branch is pushed, and can be started manually from the Actions tab. Add these **repository secrets** under Settings → Secrets and variables → Actions:
+
+- `DOCKERHUB_USERNAME`: Docker Hub account or organization namespace that owns the image repositories.
+- `DOCKERHUB_TOKEN`: Docker Hub access token with permission to push both repositories. Use an organization access token or suitable credentials if publishing under an organization.
+
+The workflow publishes `<username>/maya-voice-studio-mac` and `<username>/maya-voice-studio-windows`. Every push gets a `sha-<full-commit-sha>` tag; pushes to `master` also update `latest`. The Mac frontend is built for Linux ARM64 and AMD64; the Windows NVIDIA image is Linux AMD64 and needs an NVIDIA GPU with WSL 2. The Mac image still needs its native MLX backend. A successful image build does not test speech generation on either GPU. Configure secrets before pushing this workflow, or rerun the failed workflow once they are present.
