@@ -56,12 +56,12 @@ Open [localhost:8765](http://localhost:8765). Stop each process with Ctrl+C. The
 
 ## Docker Hub publishing
 
-Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub Actions repository secrets. The token must have permission to push `<username>/maya-voice-studio`. Synchronizing the Docker Hub description also requires a personal access token with read, write, and delete scope; for an organization, the user needs Admin access to the repository. On each branch push, CI builds both variants into that one repository with commit-specific tags. On `master`, it also publishes:
+Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` as GitHub Actions repository secrets. The token must have permission to push `<username>/maya-voice-studio`. Synchronizing the Docker Hub description also requires a personal access token with read, write, and delete scope; for an organization, the user needs Admin access to the repository. On branch pushes, CI builds both variants with commit-specific tags, except when all changed files are HTML, JavaScript, CSS, TXT, or Markdown. Run the image workflow manually to include frontend-only changes; otherwise published images retain the previous frontend. On `master`, it also publishes:
 
 - `<username>/maya-voice-studio:latest-mac-arm64` — Mac frontend proxy; requires the native Mac MLX engine.
 - `<username>/maya-voice-studio:latest-linux-amd64` — Linux AMD64 NVIDIA CUDA application.
 
-Separate tags are necessary because both Docker Desktop on Apple Silicon and native ARM Linux use the `linux/arm64` platform identifier, even though their GPU backends differ. There is no supported Linux ARM64 image yet. CI builds do not verify GPU inference. After successful builds on `master`, the workflow also synchronizes this README to the Docker Hub repository description.
+Separate tags are necessary because both Docker Desktop on Apple Silicon and native ARM Linux use the `linux/arm64` platform identifier, even though their GPU backends differ. There is no supported Linux ARM64 image yet. CI builds do not verify GPU inference. To update the Docker Hub overview, manually run the **Update Docker Hub overview** workflow from GitHub Actions. It uses this README and does not build an image.
 
 ## Credits
 
